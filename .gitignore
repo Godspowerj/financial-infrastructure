@@ -1,0 +1,30 @@
+# Binaries & Executables
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# IDE & Editor Files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Dependency / Vendor Directories
+vendor/
