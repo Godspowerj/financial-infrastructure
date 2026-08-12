@@ -33,21 +33,12 @@ func NewService(repo *Repository, gateway BankGateway) *Service {
 
 // CreatePayment handles the creation of a new payment, enforcing idempotency and state transitions.
 func (s *Service) CreatePayment(ctx context.Context, input CreatePaymentInput) (*Payment, error) {
-	// 1. Basic business validation
-	if input.IdempotencyKey == "" {
-		return nil, ErrMissingIdempotencyKey
-	}
-	if input.Amount <= 0 {
-		return nil, ErrInvalidAmount
-	}
-	if input.CustomerID == "" {
-		return nil, ErrMissingCustomerID
-	}
-	if input.MerchantID == "" {
-		return nil, ErrMissingMerchantID
+
+	if err := input.Validate(); err != nil {
+		return nil, err
 	}
 
-	// 2. Idempotency Check: see if a payment with this idempotency key already exists.
+	// Idempotency Check: see if a payment with this idempotency key already exists.
 	existing, err := s.repo.GetByIdempotencyKey(ctx, input.IdempotencyKey)
 	if err == nil {
 		// Payment already exists — return the previously created payment safely (idempotent response)
@@ -69,22 +60,22 @@ func (s *Service) CreatePayment(ctx context.Context, input CreatePaymentInput) (
 		IdempotencyKey: input.IdempotencyKey,
 		Amount:         input.Amount,
 		Currency:       currency,
-		Status:         StatusPending, // 1. Record intent as pending
+		Status:         StatusPending,
 		CustomerID:     input.CustomerID,
 		MerchantID:     input.MerchantID,
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	}
 
-	// 3. Save initial "pending" record to database
+	// Save initial "pending" record to database
 	if err := s.repo.Create(ctx, payment); err != nil {
 		return nil, fmt.Errorf("service: failed to create payment: %w", err)
 	}
 
-	// 4. Process payment through Bank Gateway state machine
+	// Process payment through Bank Gateway state machine
 	processedPayment, err := s.ProcessPayment(ctx, payment.ID)
+
 	if err != nil {
-		// Even if processing returns an error, return the latest payment state from DB
 		return payment, nil
 	}
 
@@ -103,15 +94,15 @@ func (s *Service) ProcessPayment(ctx context.Context, id string) (*Payment, erro
 		return payment, nil
 	}
 
-	// Step A: Mark status as processing
+	// Mark status as processing
 	if err := s.repo.UpdateStatus(ctx, payment.ID, StatusProcessing, ""); err != nil {
 		return nil, fmt.Errorf("service: failed updating to processing: %w", err)
 	}
 
-	// Step B: Authorize payment via Bank Gateway
+	// Authorize payment via Bank Gateway
 	approved, failureReason, err := s.gateway.Authorize(ctx, payment)
 
-	// Step C: Update status based on bank response
+	// Update status based on bank response
 	if approved {
 		if err := s.repo.UpdateStatus(ctx, payment.ID, StatusSuccessful, ""); err != nil {
 			return nil, fmt.Errorf("service: failed marking payment successful: %w", err)

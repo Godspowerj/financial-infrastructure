@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver with database/sql
@@ -40,6 +39,7 @@ func main() {
 		bankURL = "http://localhost:8081"
 	}
 
+
 	// Wire up layers: Repository + Gateway -> Service -> Handler
 	repo := payments.NewRepository(db)
 	gateway := payments.NewHTTPBankGateway(bankURL)
@@ -47,30 +47,16 @@ func main() {
 	handler := payments.NewHandler(service)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/health", healthHandler)
-	mux.HandleFunc("/webhooks/bank", handler.HandleBankWebhook)
-	mux.HandleFunc("/payments", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/payments" || r.URL.Path == "/payments/" {
-			handler.CreatePayment(w, r)
-			return
-		}
-		if strings.HasSuffix(r.URL.Path, "/process") {
-			handler.ProcessPayment(w, r)
-			return
-		}
-		handler.GetPayment(w, r)
-	})
-	mux.HandleFunc("/payments/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, "/process") {
-			handler.ProcessPayment(w, r)
-			return
-		}
-		handler.GetPayment(w, r)
-	})
+	mux.HandleFunc("GET /health", healthHandler)
+	mux.HandleFunc("POST /webhooks/bank", handler.HandleBankWebhook)
+	mux.HandleFunc("POST /payments", handler.CreatePayment)
+	mux.HandleFunc("GET /payments/{id}", handler.GetPayment)
+	mux.HandleFunc("POST /payments/{id}/process", handler.ProcessPayment)
+
 
 	addr := ":8080"
 	log.Printf("payments service listening on %s", addr)
-	if err := http.ListenAndServe(addr, mux); err != nil {
+	if err := http.ListenAndServe(addr, loggingMiddleware(mux)); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
 }
@@ -96,3 +82,19 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 		"database": dbStatus,
 	})
 }
+
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		// call the next handler in the chain
+		next.ServeHTTP(w, r)
+
+		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start))
+		
+	})
+
+	
+}
+	

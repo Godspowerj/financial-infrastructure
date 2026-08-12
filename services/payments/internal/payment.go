@@ -39,3 +39,24 @@ type CreatePaymentInput struct {
 	CustomerID     string `json:"customer_id"`
 	MerchantID     string `json:"merchant_id"`
 }
+// Validate verifies all required fields on CreatePaymentInput.
+func (input *CreatePaymentInput) Validate() error {
+
+	if input.IdempotencyKey == "" {
+		return ErrMissingIdempotencyKey
+	}
+
+	if input.Amount <= 0 {
+		return ErrInvalidAmount
+	}
+
+	if input.CustomerID == "" {
+		return ErrMissingCustomerID
+	}
+
+	if input.MerchantID == "" {
+		return ErrMissingMerchantID
+	}
+
+	return nil
+}

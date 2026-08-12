@@ -26,5 +26,7 @@ Desktop.ini
 # Logs
 *.log
 
-# Dependency / Vendor Directories
-vendor/
+# Local Personal Notes
+notes.md
+notes/
+

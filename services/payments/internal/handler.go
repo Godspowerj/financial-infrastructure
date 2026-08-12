@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strings"
 )
 
 // Handler handles HTTP requests for payments.
@@ -19,6 +18,7 @@ func NewHandler(service *Service) *Handler {
 
 // CreatePayment handles POST /payments
 func (h *Handler) CreatePayment(w http.ResponseWriter, r *http.Request) {
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -49,18 +49,13 @@ func (h *Handler) CreatePayment(w http.ResponseWriter, r *http.Request) {
 
 // GetPayment handles GET /payments/{id}
 func (h *Handler) GetPayment(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 
-	// Extract ID from path: /payments/{id}
-	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(pathParts) < 2 || pathParts[1] == "" {
+	id := r.PathValue("id")
+
+	if id == "" {
 		writeJSONError(w, http.StatusBadRequest, "payment id is required in path")
 		return
 	}
-	id := pathParts[1]
 
 	payment, err := h.service.GetPayment(r.Context(), id)
 	if err != nil {
@@ -77,17 +72,13 @@ func (h *Handler) GetPayment(w http.ResponseWriter, r *http.Request) {
 
 // ProcessPayment handles POST /payments/{id}/process
 func (h *Handler) ProcessPayment(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 
-	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-	if len(pathParts) < 2 || pathParts[1] == "" {
+	id := r.PathValue("id")
+
+	if id == "" {
 		writeJSONError(w, http.StatusBadRequest, "payment id is required in path")
 		return
 	}
-	id := pathParts[1]
 
 	payment, err := h.service.ProcessPayment(r.Context(), id)
 	if err != nil {

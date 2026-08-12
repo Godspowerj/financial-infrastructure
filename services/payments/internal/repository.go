@@ -79,18 +79,18 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*Payment, error) {
 		WHERE id = $1
 	`
 
-	var p Payment
+	var payment Payment
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&p.ID,
-		&p.IdempotencyKey,
-		&p.Amount,
-		&p.Currency,
-		&p.Status,
-		&p.FailureReason,
-		&p.CustomerID,
-		&p.MerchantID,
-		&p.CreatedAt,
-		&p.UpdatedAt,
+		&payment.ID,
+		&payment.IdempotencyKey,
+		&payment.Amount,
+		&payment.Currency,
+		&payment.Status,
+		&payment.FailureReason,
+		&payment.CustomerID,
+		&payment.MerchantID,
+		&payment.CreatedAt,
+		&payment.UpdatedAt,
 	)
 
 	if err != nil {
@@ -100,7 +100,7 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*Payment, error) {
 		return nil, fmt.Errorf("repository: failed to query payment by id: %w", err)
 	}
 
-	return &p, nil
+	return &payment, nil
 }
 
 // GetByIdempotencyKey fetches an existing payment by its idempotency key.

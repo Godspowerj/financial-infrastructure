@@ -41,6 +41,10 @@ completion. Concretely:
 - Don't hand over finished, unexplained code to copy-paste. Build things
   incrementally, explain *why* each piece exists, and what breaks if it's
   left out.
+- **Hands-on practice enforcement**: The user MUST write/type all implementation
+  code themselves to build syntax muscle memory and deep understanding. The assistant
+  should provide architectural context, function signatures/stubs with `// TODO`s, and
+  guided challenges—never complete implementation blocks to copy-paste.
 - Never re-send a full project zip after the initial scaffold. From the
   first scaffold onward, give exact file paths + exact content for new
   files, or precise old-vs-new snippets for edits to existing files. The
@@ -135,3 +139,16 @@ polished writeup — plain notes are fine.
 - Every service exposes `/health` distinguishing "process alive" from
   "can reach its dependencies" (see payments service `main.go` for the
   pattern).
+
+## Learning Notes Maintenance
+
+- Maintain the local file `notes.md` in the workspace root.
+- Whenever a new concept, pattern, or explanation is discussed and understood with the user, update `notes.md` automatically to capture key insights, analogies, and code patterns for their personal reference.
+- Ensure `notes.md` remains listed in `.gitignore` so it is never committed to git.
+
+## Documentation & Visual Diagrams
+
+- Always use **Mermaid diagrams** (` ```mermaid `) in `README.md`, `notes.md`, ADRs, and module docs (`docs/modules/`, `docs/decisions/`) to visualize architecture, request flows, state machines, and system relationships.
+- Diagrams are preferred over long prose for explaining technical designs, network flows, layer dependencies, and state machine transitions.
+
+

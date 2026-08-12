@@ -6,7 +6,19 @@ behind key architecture choices as they come up.
 
 ## Module 1 — Payments (in progress)
 
+```mermaid
+graph TD
+    Client["Client / Postman / Mobile App"] -->|"POST /payments"| Handler["HTTP Handler (internal/handler.go)"]
+    Handler -->|"Validate & Call"| Service["Payment Service (internal/service.go)"]
+    Service -->|"Check Idempotency & Write"| Repo["Repository (internal/repository.go)"]
+    Repo -->|"SQL INSERT / UPDATE"| Postgres[(Postgres Database)]
+    Service -->|"Authorize Charge"| Gateway["HTTP Bank Gateway (internal/gateway.go)"]
+    Gateway -->|"POST /authorize"| BankSim["Bank Simulator (:8081)"]
+    BankSim -.->|"Async Webhook POST /webhooks/bank"| Handler
+```
+
 ### Prerequisites
+
 - Go 1.22+ installed locally
 - Docker + Docker Compose installed
 
