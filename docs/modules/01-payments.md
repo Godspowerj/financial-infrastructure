@@ -6,11 +6,12 @@ How to record payment requests safely with idempotency (preventing duplicate cha
 ## Architecture & System Design
 The Payments service sits between clients and external bank/card processing networks.
 
-```
-Client (Postman / App) ────> Payments Service (:8080) ────> Bank Simulator (:8081)
-                                      │                              │
-                                      ▼                              ▼
-                                 Postgres DB                 Async Webhook Callback
+```mermaid
+graph LR
+    Client["Client (Postman / App)"] -->|"POST /payments"| Payments["Payments Service (:8080)"]
+    Payments -->|"POST /authorize"| BankSim["Bank Simulator (:8081)"]
+    Payments -->|"SQL INSERT / UPDATE"| Postgres[(Postgres DB)]
+    BankSim -.->|"Async Webhook POST /webhooks/bank"| Payments
 ```
 
 ## Key Code Entry Points & File Map

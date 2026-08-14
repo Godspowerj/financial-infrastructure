@@ -17,26 +17,30 @@ var (
 	ErrBankUnreachable   = errors.New("bank simulator is offline or unreachable")
 )
 
-// BankGateway interface abstracts communication with external bank payment networks
-// (e.g. Visa/Mastercard, NIBSS, or card processing networks).
-type BankGateway interface {
-	Authorize(ctx context.Context, payment *Payment) (bool, string, error)
+
+//mock bank-simulator
+type MockBankGateway struct {
+	ShouldApprove bool
+	Reason        string
+	Err           error
 }
 
-// MockBankGateway is an in-memory simulator implementation of BankGateway for unit tests.
-type MockBankGateway struct{}
-
-// NewMockBankGateway creates a new MockBankGateway instance.
+func (m *MockBankGateway) Authorize(ctx context.Context, payment *Payment) (bool, string, error) {
+	return m.ShouldApprove, m.Reason, m.Err
+}
+ 
 func NewMockBankGateway() *MockBankGateway {
 	return &MockBankGateway{}
 }
 
-// Authorize simulates in-memory authorization.
-func (g *MockBankGateway) Authorize(ctx context.Context, payment *Payment) (bool, string, error) {
-	if payment.Amount%100 == 99 {
-		return false, "insufficient_funds", ErrInsufficientFunds
-	}
-	return true, "", nil
+
+//..ends here
+
+
+// BankGateway interface abstracts communication with external bank payment networks
+// (e.g. Visa/Mastercard, NIBSS, or card processing networks).
+type BankGateway interface {
+	Authorize(ctx context.Context, payment *Payment) (bool, string, error)
 }
 
 // HTTPBankGateway connects to a standalone Bank Simulator microservice over HTTP.

@@ -42,7 +42,8 @@ func main() {
 
 	// Wire up layers: Repository + Gateway -> Service -> Handler
 	repo := payments.NewRepository(db)
-	gateway := payments.NewHTTPBankGateway(bankURL)
+	//gateway := payments.NewHTTPBankGateway(bankURL)
+	gateway := payments.NewMockBankGateway()
 	service := payments.NewService(repo, gateway)
 	handler := payments.NewHandler(service)
 

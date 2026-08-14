@@ -4,18 +4,43 @@ A hands-on lab for understanding how banks/fintechs engineer their core
 backend systems, one module at a time. See docs/decisions for the reasoning
 behind key architecture choices as they come up.
 
-## Module 1 — Payments (in progress)
+## Architecture Overview
 
 ```mermaid
 graph TD
-    Client["Client / Postman / Mobile App"] -->|"POST /payments"| Handler["HTTP Handler (internal/handler.go)"]
-    Handler -->|"Validate & Call"| Service["Payment Service (internal/service.go)"]
-    Service -->|"Check Idempotency & Write"| Repo["Repository (internal/repository.go)"]
-    Repo -->|"SQL INSERT / UPDATE"| Postgres[(Postgres Database)]
-    Service -->|"Authorize Charge"| Gateway["HTTP Bank Gateway (internal/gateway.go)"]
+    Client["Client / Postman / Mobile App"] -->|"POST /payments"| Handler["HTTP Handler (services/payments)"]
+    Handler -->|"Validate & Call"| Service["Payment Service"]
+    Service -->|"Check Idempotency & Write"| Repo["Payments Repo"]
+    Repo -->|"SQL INSERT / UPDATE"| Postgres[(Postgres DB: payments)]
+    Service -->|"Authorize Charge"| Gateway["HTTP Bank Gateway"]
     Gateway -->|"POST /authorize"| BankSim["Bank Simulator (:8081)"]
-    BankSim -.->|"Async Webhook POST /webhooks/bank"| Handler
+    BankSim -.->|"Async Webhook"| Handler
+    Service -.->|"POST /entries"| Ledger["Ledger Service (:8082)"]
+    Ledger -->|"Insert Debits & Credits"| LedgerDB[(Postgres DB: fintech_ledger)]
 ```
+
+## Modules Progress
+
+- [x] **Module 1 — Payments Service & Bank Simulator** (Port `:8080` & `:8081`)
+- [ ] **Module 2 — Ledger Service (Double-Entry Bookkeeping)** (Port `:8082`)
+- [ ] **Module 3 — Transfers & Sagas**
+- [ ] **Module 4 — Settlement & Reconciliation**
+- [ ] **Module 5 — Notifications & Webhooks**
+- [ ] **Module 6 — Fraud & Risk Engine**
+- [ ] **Module 7 — Scaling, Observability & Caching**
+
+## Continuous Integration (CI/CD)
+
+Our automated GitHub Actions workflow (`.github/workflows/ci.yml`) runs quality checks on every push or pull request:
+
+![CI Pipeline Diagram](file:///c:/Users/USER/Downloads/fintech-lab-scaffold/docs/assets/ci_diagram.png)
+
+1. **Git Push / Pull Request** ➡️ Triggers workflow.
+2. **Checkout Code** ➡️ Downloads repository code.
+3. **Set up Go 1.22** ➡️ Configures Go compiler.
+4. **Download Dependencies** ➡️ Downloads Go packages (`go mod download`).
+5. **Run Go Unit Tests** ➡️ Executes unit tests (`go test -v ./...`).
+6. **Build Binaries** ➡️ Compiles service binaries (`go build`).
 
 ### Prerequisites
 

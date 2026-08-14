@@ -13,6 +13,28 @@ We create a standalone microservice `services/bank-simulator` listening on port 
 - In-memory mock only — rejected because it misses real network boundaries and socket connection failures.
 - Direct external sandbox (e.g. Paystack) — deferred until internet dependency and API keys are needed.
 
+## Network & Webhook Flow Diagram
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client as Client / Postman
+    participant Payments as Payments Service (:8080)
+    participant Bank as Bank Simulator (:8081)
+
+    Client->>Payments: POST /payments
+    Payments->>Bank: POST /authorize (Sync authorization)
+    alt Approved
+        Bank-->>Payments: HTTP 200 OK (approved: true)
+    else Declined / Timeout
+        Bank-->>Payments: HTTP 200 OK (approved: false) / Timeout
+    end
+    opt Async Callback
+        Bank->>Payments: POST /webhooks/bank (Async settlement callback)
+    end
+    Payments-->>Client: 201 Created (Payment JSON)
+```
+
 ## Consequences
 - Requires running two separate microservices locally (`payments` on `:8080`, `bank-simulator` on `:8081`).
 - Enables testing offline/server-down resilience (e.g., stopping `bank-simulator` and verifying retries).
