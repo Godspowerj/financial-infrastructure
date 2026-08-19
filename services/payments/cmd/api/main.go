@@ -39,12 +39,16 @@ func main() {
 		bankURL = "http://localhost:8081"
 	}
 
+    ledgerURL := os.Getenv("LEDGER_SERVICE_URL")
+    if ledgerURL == "" {
+        ledgerURL = "http://localhost:8082"
+    }
 
 	// Wire up layers: Repository + Gateway -> Service -> Handler
 	repo := payments.NewRepository(db)
-	//gateway := payments.NewHTTPBankGateway(bankURL)
-	gateway := payments.NewMockBankGateway()
-	service := payments.NewService(repo, gateway)
+	gateway := payments.NewHTTPBankGateway(bankURL)
+    ledgerClient := payments.NewHTTPLedgerClient(ledgerURL)
+	service := payments.NewService(repo, gateway, ledgerClient)
 	handler := payments.NewHandler(service)
 
 	mux := http.NewServeMux()

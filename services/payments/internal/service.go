@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
 )
+
 
 // Common business logic errors.
 var (
@@ -19,15 +21,17 @@ var (
 
 // Service encapsulates business logic for payments.
 type Service struct {
-	repo    *Repository
-	gateway BankGateway
+	repo         *Repository
+	gateway      BankGateway
+	ledgerClient LedgerClient
 }
 
 // NewService creates a new Service instance.
-func NewService(repo *Repository, gateway BankGateway) *Service {
+func NewService(repo *Repository, gateway BankGateway, ledgerClient LedgerClient) *Service {
 	return &Service{
-		repo:    repo,
-		gateway: gateway,
+		repo:         repo,
+		gateway:      gateway,
+		ledgerClient: ledgerClient,
 	}
 }
 
@@ -107,6 +111,23 @@ func (s *Service) ProcessPayment(ctx context.Context, id string) (*Payment, erro
 		if err := s.repo.UpdateStatus(ctx, payment.ID, StatusSuccessful, ""); err != nil {
 			return nil, fmt.Errorf("service: failed marking payment successful: %w", err)
 		}
+
+		// Record entry in ledger
+		ledgerInput := LedgerRecordInput{
+			ReferenceID: payment.IdempotencyKey,
+			CustomerID:  payment.CustomerID,
+			MerchantID:  payment.MerchantID,
+			Amount:      payment.Amount,
+		}
+
+		log.Printf("📤 [PAYMENTS SERVICE] Payment %s successful! Sending accounting entry to Ledger service (:8082)...", payment.ID)
+
+		if err := s.ledgerClient.RecordEntry(ctx, ledgerInput); err != nil {
+			log.Printf("❌ [PAYMENTS SERVICE] Failed recording ledger entry: %v", err)
+			return nil, fmt.Errorf("service: failed to record ledger entry: %w", err)
+		}
+
+		log.Printf("✅ [PAYMENTS SERVICE] Ledger service confirmed accounting entry for payment %s!", payment.ID)
 	} else {
 		if failureReason == "" && err != nil {
 			failureReason = err.Error()

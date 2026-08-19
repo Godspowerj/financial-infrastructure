@@ -57,6 +57,59 @@ completion. Concretely:
   to the next module while a concept hasn't landed is the failure mode to
   avoid, not slow progress.
 
+## Proactive documentation triggers
+
+The assistant should not wait to be asked before flagging ADR- or
+benchmark-worthy moments — noticing them *is* part of the job here, because
+the person is still building the instinct for "this was actually a decision"
+versus "this was just typing code."
+
+- **ADRs**: the moment a real tradeoff gets decided in conversation (a
+  reasonable alternative existed and got rejected for a stated reason),
+  say so explicitly — e.g. "this is an ADR-worthy call: BIGINT kobo over
+  DECIMAL naira. Want me to draft `docs/decisions/000X-...md`?" — then
+  draft it if the person says yes. Don't draft it unprompted; flag first.
+- **Benchmarks**: once a real performance question is on the table (not
+  hypothetical — e.g. "will the outbox publisher keep up under load"),
+  say so and propose what to measure and how, per the existing benchmark
+  template. Don't benchmark speculatively, per the existing rule below.
+- If several small decisions pile up in one session and none individually
+  felt ADR-worthy in the moment, do a quick pass at the end of the
+  session: "anything here worth an ADR in hindsight?"
+- These are prompts, not autonomous writes — the assistant flags and
+  drafts on confirmation, it doesn't silently create files.
+
+## Name the pattern
+
+When what's being built matches a recognized distributed-systems or
+software-design pattern, say so by name the first time it comes up —
+don't just implement it silently as "code that happens to work this way."
+
+- Call it out inline, briefly: name the pattern, one plain-language
+  sentence on what it is, one sentence on why it fits here. Example:
+  "This retry-with-outbox-table setup is the **Outbox pattern** — instead
+  of publishing an event and writing to the DB as two separate steps that
+  can fail independently, you write the event to a table in the same DB
+  transaction as the change, then a separate process publishes it. Fits
+  here because we need the payment write and the event to succeed or fail
+  together."
+- Only name a pattern once it's genuinely being implemented or clearly
+  about to be — not speculatively dropped in to sound advanced.
+- Keep it to one pattern at a time, introduced when it's relevant to the
+  step at hand, consistent with the "don't stack new vocabulary" rule
+  above — naming the pattern *is* the vocabulary being introduced, so
+  don't also introduce two other new terms in the same breath.
+- When a module doc (`docs/modules/0N-name.md`) gets written, make sure
+  any pattern used in that module is named explicitly in the doc (not
+  just implied by the code), so it's greppable later — e.g. someone
+  scanning `docs/modules/` for "where did I implement Saga?" should find
+  it by searching the word.
+- Examples of patterns likely to come up in this project, given the
+  module list above: Idempotency Key, Outbox, Saga (orchestration vs.
+  choreography), Circuit Breaker, Retry with backoff, Dead Letter Queue,
+  CQRS (if it comes up), Two-Phase Commit (likely discussed and rejected
+  in favor of Sagas — that rejection itself is ADR material).
+
 ## ADRs (Architecture Decision Records)
 
 Location: `docs/decisions/NNNN-short-title.md`, numbered sequentially
@@ -150,5 +203,3 @@ polished writeup — plain notes are fine.
 
 - Always use **Mermaid diagrams** (` ```mermaid `) in `README.md`, `notes.md`, ADRs, and module docs (`docs/modules/`, `docs/decisions/`) to visualize architecture, request flows, state machines, and system relationships.
 - Diagrams are preferred over long prose for explaining technical designs, network flows, layer dependencies, and state machine transitions.
-
-
