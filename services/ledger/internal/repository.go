@@ -167,5 +167,21 @@ func (r *Repository) GetLedgerEntryByID(ctx context.Context, id string) (*Ledger
 	return &entry, nil
 }
 
+// GetAccountBalance calculates the net balance for an account (credits - debits).
+func (r *Repository) GetAccountBalance(ctx context.Context, accountID string) (int64, error) {
+	const query = `
+		SELECT COALESCE(
+			SUM(CASE WHEN direction = 'credit' THEN amount ELSE -amount END),
+			0
+		)
+		FROM ledger_lines
+		WHERE account_id = $1
+	`
+	var balance int64
+	err := r.db.QueryRowContext(ctx, query, accountID).Scan(&balance)
+	if err != nil {
+		return 0, fmt.Errorf("failed to calculate account balance: %w", err)
+	}
 
-
+	return balance, nil
+}

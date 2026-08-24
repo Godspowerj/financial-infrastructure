@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-
 // Common business logic errors.
 var (
 	ErrInvalidAmount         = errors.New("amount must be greater than 0")
@@ -120,21 +119,29 @@ func (s *Service) ProcessPayment(ctx context.Context, id string) (*Payment, erro
 			Amount:      payment.Amount,
 		}
 
-		log.Printf("📤 [PAYMENTS SERVICE] Payment %s successful! Sending accounting entry to Ledger service (:8082)...", payment.ID)
+		log.Printf("[PAYMENTS SERVICE] Payment %s successful! Sending accounting entry to Ledger service (:8082)...", payment.ID)
 
 		if err := s.ledgerClient.RecordEntry(ctx, ledgerInput); err != nil {
-			log.Printf("❌ [PAYMENTS SERVICE] Failed recording ledger entry: %v", err)
+			log.Printf("[PAYMENTS SERVICE] Failed recording ledger entry: %v", err)
 			return nil, fmt.Errorf("service: failed to record ledger entry: %w", err)
 		}
 
-		log.Printf("✅ [PAYMENTS SERVICE] Ledger service confirmed accounting entry for payment %s!", payment.ID)
+		log.Printf("[PAYMENTS SERVICE] Ledger service confirmed accounting entry for payment %s!", payment.ID)
 	} else {
 		if failureReason == "" && err != nil {
 			failureReason = err.Error()
 		}
-		if err := s.repo.UpdateStatus(ctx, payment.ID, StatusFailed, failureReason); err != nil {
-			return nil, fmt.Errorf("service: failed marking payment failed: %w", err)
+		if errors.Is(err, ErrBankUnreachable) {
+			// Bank is offline — revert to pending, worker will retry later
+			log.Printf("[PAYMENTS SERVICE] Bank unreachable for payment %s, reverting to pending", payment.ID)
+			s.repo.UpdateStatus(ctx, payment.ID, StatusPending, "")
+		} else {
+			// Bank gave a real decline — mark as failed (terminal)
+			if err := s.repo.UpdateStatus(ctx, payment.ID, StatusFailed, failureReason); err != nil {
+				return nil, fmt.Errorf("service: failed marking payment failed: %w", err)
+			}
 		}
+
 	}
 
 	// Fetch updated payment record from repository

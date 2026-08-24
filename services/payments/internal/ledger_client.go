@@ -71,3 +71,4 @@ func (h *HTTPLedgerClient) RecordEntry(ctx context.Context, input LedgerRecordIn
 	}
 	return nil
 }
+

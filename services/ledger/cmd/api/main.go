@@ -42,7 +42,8 @@ func main() {
 	mux.HandleFunc("GET /health", healthHandler)
     mux.HandleFunc("POST /ledger/entries", handler.CreateEntryWithLines)
 	mux.HandleFunc("GET /ledger", handler.GetLedgerEntries)
-	//mux.HandleFunc("GET /ledger/{id}", handler.GetLedgerEntryByID)
+	mux.HandleFunc("GET /ledger/{id}", handler.GetLedgerEntryByID)
+	mux.HandleFunc("GET /accounts/{id}/balance", handler.GetAccountBalance)
 
 
     addr := ":8082"

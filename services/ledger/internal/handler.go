@@ -77,3 +77,51 @@ func (h *Handler) GetLedgerEntries(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(entries)
 }
+
+func (h *Handler) GetLedgerEntryByID(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "entry id is required", http.StatusBadRequest)
+		return
+	}
+
+	entry, err := h.Service.GetLedgerEntryByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, "Failed to get ledger entry: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(entry)
+}
+
+func (h *Handler) GetAccountBalance(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	accountID := r.PathValue("id")
+	if accountID == "" {
+		http.Error(w, "account id is required", http.StatusBadRequest)
+		return
+	}
+
+	balance, err := h.Service.GetAccountBalance(r.Context(), accountID)
+	if err != nil {
+		http.Error(w, "failed to get balance: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"account_id": accountID,
+		"balance":    balance,
+	})
+}
+

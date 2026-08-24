@@ -134,3 +134,48 @@ func (r *Repository) GetByIdempotencyKey(ctx context.Context, key string) (*Paym
 
 	return &p, nil
 }
+
+// GetRetryablePayments fetches all pending payments in the system within the 30-minute window.
+func (r *Repository) GetRetryablePayments(ctx context.Context) ([]Payment, error) {
+	const query = `
+		SELECT id, idempotency_key, amount, currency, status, COALESCE(failure_reason, ''),
+		       customer_id, merchant_id, created_at, updated_at
+		FROM payments
+		WHERE status = 'pending'
+		  AND created_at > NOW() - INTERVAL '30 minutes'
+		ORDER BY created_at ASC
+		LIMIT 50
+	`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("repository: failed to query retryable payments: %w", err)
+	}
+	defer rows.Close()
+
+	var payments []Payment
+	for rows.Next() {
+		var p Payment
+		if err := rows.Scan(
+			&p.ID,
+			&p.IdempotencyKey,
+			&p.Amount,
+			&p.Currency,
+			&p.Status,
+			&p.FailureReason,
+			&p.CustomerID,
+			&p.MerchantID,
+			&p.CreatedAt,
+			&p.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("repository: failed to scan payment: %w", err)
+		}
+		payments = append(payments, p)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("repository: error iterating retryable payments: %w", err)
+	}
+
+	return payments, nil
+}
