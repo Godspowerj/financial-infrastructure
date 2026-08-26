@@ -9,7 +9,7 @@ import "time"
 
 const (
 	StatusPending    = "pending"    // Transfer created, not yet started
-	StatusProcessing = "processing" // Saga steps in progress
+	StatusProcessed  = "processed"  // Ledger entry posted successfully, transfer complete
 	StatusCompleted  = "completed"  // All saga steps succeeded
 	StatusFailed     = "failed"     // A step failed, compensation may have run
 	StatusReversed   = "reversed"   // Compensation completed after failure
