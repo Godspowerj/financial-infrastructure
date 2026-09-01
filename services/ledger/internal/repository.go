@@ -20,6 +20,7 @@ func (r *Repository) CreateAccount(ctx context.Context, acc Account	) error {
 	query := `
 	INSERT INTO accounts (id, type, currency, created_at)
 	VALUES ($1, $2, $3, now())
+	ON CONFLICT (id) DO NOTHING
 	`
 
 	_, err := r.db.ExecContext(ctx, query, acc.ID, acc.Type, acc.Currency)

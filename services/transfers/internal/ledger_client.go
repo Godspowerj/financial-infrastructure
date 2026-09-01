@@ -27,7 +27,7 @@ func NewHTTPClient(baseURL string) *HTTPClient {
 }
 
 func (c *HTTPClient) GetBalance(ctx context.Context, accountID string) (int64, error) {
-	url := c.baseURL + "/accounts/" + accountID + "/balance"
+	url := c.baseURL + "/accounts/" + "customer:" + accountID + "/balance"
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

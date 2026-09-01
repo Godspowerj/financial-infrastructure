@@ -86,9 +86,6 @@ func (s *Service) CreateTransfer(ctx context.Context, input CreateTransferInput)
 	}
 	//Implement ledger double-entry
 	if err := s.ledgerClient.PostTransferEntry(ctx, t.ID, t.SenderID, t.ReceiverID, t.Amount); err != nil {
-		// Compensation: the transfer record is already in Postgres as "pending".
-		// If we just return here, it stays stuck forever — nobody knows it failed.
-		// Mark it "failed" so the system has an accurate record and it can be retried.
 		s.repo.UpdateStatus(ctx, t.ID, StatusFailed, "ledger_unavailable")
 		return nil, fmt.Errorf("service: failed posting ledger entry: %w", err)
 	}
